@@ -210,6 +210,7 @@ def query_aas(model, metalabel, preferred_name, definition, unit, datatype, coll
             }
             #final_result = json.dumps(final_result, indent = 4)
             final_results.append(final_result)
+            # test
         
         return final_results
 
