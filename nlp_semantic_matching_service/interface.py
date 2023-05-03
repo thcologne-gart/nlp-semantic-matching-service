@@ -37,15 +37,20 @@ class SemanticMatchingService(
             {"matching_method": "Semantic equivalent, same semantic Id", "matching_algorithm": "None"}
         ]
         matching_methods = []
+        """
         for method in matching_methods_list:
             matching_methods.append(
+                #semantic_matching_interface.response.SingleSemanticMatchingServiceInformation(
                 semantic_matching_interface.response.SingleSemanticMatchingServiceInformation(
                     matching_method=method["matching_method"],
                     matching_algorithm=method["matching_algorithm"]
                 )
             )
+        """
         return semantic_matching_interface.response.SemanticMatchingServiceInformation(
-            matching_methods=matching_methods,
+            #matching_methods=matching_methods,
+            matching_method='NLP without Metadata',
+            matching_algorithm='Semantic search, k-nearest-neighbor with squared L2 distance (euclidean distance), with model gart-labor/eng-distilBERT-se-eclass',
             required_parameters=["semanticId", "preferredName", "definition"],
             optional_parameters=["unit", "dataType"]
         )
