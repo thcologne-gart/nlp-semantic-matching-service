@@ -214,11 +214,13 @@ def query_aas(model, metalabel, preferred_name, definition, unit, datatype, coll
         
         return final_results
 
+"""
+
 def classify_elements(collections, client_chroma, preferred_name, definition, unit, datatype, semantic_id, number_elements):
     # Load NLP Model
     model = SentenceTransformer("gart-labor/eng-distilBERT-se-eclass")
 
-    with open("metadata.pickle", "rb") as handle:
+    with open("nlp_semantic_matching_service/metadata.pickle", "rb") as handle:
         metalabel = pickle.load(handle)
     
     results = []
@@ -231,11 +233,32 @@ def classify_elements(collections, client_chroma, preferred_name, definition, un
     
     return results
 
+"""
+
+def classify_elements(collections, client_chroma, preferred_name, definition, unit, datatype, semantic_id, number_elements):
+    # Load NLP Model
+    model = SentenceTransformer("gart-labor/eng-distilBERT-se-eclass")
+
+    # Load metadata
+    with open("nlp_semantic_matching_service/metadata.pickle", "rb") as f:
+        metalabel = pickle.load(f)
+
+    # Get best matching submodel element from every collection
+    results = [
+        query_aas(
+            model, metalabel, preferred_name, definition, unit, datatype, 
+            client_chroma.get_collection(collection.name), number_elements
+        )[0]
+        for collection in collections
+    ]
+
+    return results
+
 def classify_elements_one_aas(collection, client_chroma, preferred_name, definition, unit, datatype, semantic_id, number_elements):
 
     model = SentenceTransformer("gart-labor/eng-distilBERT-se-eclass")
 
-    with open("metadata.pickle", "rb") as handle:
+    with open("nlp_semantic_matching_service/metadata.pickle", "rb") as handle:
         metalabel = pickle.load(handle)
     # Get reuslts from the one requested aas
     results = query_aas(model, metalabel, preferred_name, definition, unit, datatype, collection, number_elements)

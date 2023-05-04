@@ -149,6 +149,7 @@ class SemanticMatchingService(
         else:
             datatype = 'NotInQuery'
         aas_id = query.aas_identifier_id
+
         number_elements = query.return_matches
         # get the right collection with the correct requested aas
         right_collection = get_right_collection(collections, aas_id)
