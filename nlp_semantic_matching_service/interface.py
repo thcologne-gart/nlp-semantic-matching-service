@@ -23,7 +23,7 @@ class SemanticMatchingService(
         Settings(
             chroma_api_impl="rest",
             # chroma_server_host muss angepasst werden nach jedem Neustart AWS
-            chroma_server_host="3.68.69.155",
+            chroma_server_host="3.77.147.39",
             chroma_server_http_port=8000,
         )
     )
