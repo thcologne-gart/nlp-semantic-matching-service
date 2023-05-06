@@ -30,7 +30,10 @@ def compare_semantic_ids(
                 "submodel_id_short": result['metadatas'][0]['SubmodelName'],
                 "submodel_id": result['metadatas'][0]['SubmodelId'],
                 "id_short_path": result['metadatas'][0]['IdShortPath'],
-                "matched_object": value_dict
+                "matched_object": value_dict,
+                "preferred_name": result['metadatas'][0]['PreferredName'],
+                "definition": result['metadatas'][0]['Definition'],
+                "semantic_id": result['metadatas'][0]['SESemanticId'],
             }
             # print(final_result)
 
@@ -56,7 +59,10 @@ def compare_semantic_ids_one_aas(collection, client_chroma, preferred_name, defi
             "submodel_id_short": result['metadatas'][0]['SubmodelName'],
             "submodel_id": result['metadatas'][0]['SubmodelId'],
             "id_short_path": result['metadatas'][0]['IdShortPath'],
-            "matched_object": value_dict
+            "matched_object": value_dict,
+            "preferred_name": result['metadatas'][0]['PreferredName'],
+            "definition": result['metadatas'][0]['Definition'],
+            "semantic_id": result['metadatas'][0]['SESemanticId'],
         }
         # print(final_result)
 

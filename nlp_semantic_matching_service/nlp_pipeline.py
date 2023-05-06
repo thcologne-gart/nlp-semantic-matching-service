@@ -206,7 +206,10 @@ def query_aas(model, metalabel, preferred_name, definition, unit, datatype, coll
                 "submodel_id_short": result['metadatas'][0][i]['SubmodelName'],
                 "submodel_id": result['metadatas'][0][i]['SubmodelId'],
                 "id_short_path": result['metadatas'][0][i]['IdShortPath'],
-                "matched_object": value_dict
+                "matched_object": value_dict,
+                "preferred_name": result['metadatas'][0][i]['PreferredName'],
+                "definition": result['metadatas'][0][i]['Definition'],
+                "semantic_id": result['metadatas'][0][i]['SESemanticId'],
             }
             #final_result = json.dumps(final_result, indent = 4)
             final_results.append(final_result)

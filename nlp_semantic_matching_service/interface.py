@@ -14,6 +14,11 @@ import semantic_matching_interface.response
 from nlp_pipeline import classify_elements, get_right_collection, classify_elements_one_aas
 from compare_semantic_id import compare_semantic_ids, compare_semantic_ids_one_aas
 
+# Create own class for the resonse of the semantic matching service which extends the class from response.py
+class NlpSubmodelElementMatch(semantic_matching_interface.response.SubmodelElementMatch): 
+    preferred_name: str
+    definition: str
+    semantic_id: str
 
 class SemanticMatchingService(
     semantic_matching_interface.interface.AbstractSemanticMatchingInterface
@@ -23,7 +28,7 @@ class SemanticMatchingService(
         Settings(
             chroma_api_impl="rest",
             # chroma_server_host muss angepasst werden nach jedem Neustart AWS
-            chroma_server_host="3.77.147.39",
+            chroma_server_host="3.75.91.79",
             chroma_server_http_port=8000,
         )
     )
@@ -183,12 +188,15 @@ class SemanticMatchingService(
         # same semantic_id, use this result
         if result_semantic_equivalent != 0:
             matching_result.append(
-                semantic_matching_interface.response.SubmodelElementMatch(
+                NlpSubmodelElementMatch(
                     matching_method=result_semantic_equivalent['matching_method'],
                     matching_algorithm=result_semantic_equivalent['matching_algorithm'],
                     matching_score=result_semantic_equivalent['matching_distance'],
                     submodel_identifier_id=result_semantic_equivalent['submodel_id'],
-                    id_short_path=result_semantic_equivalent["id_short_path"]
+                    id_short_path=result_semantic_equivalent["id_short_path"],
+                    preferred_name = result_semantic_equivalent["preferred_name"],
+                    definition = result_semantic_equivalent["definition"],  
+                    semantic_id = result_semantic_equivalent["semantic_id"]
                 )
             )
             return semantic_matching_interface.response.SubmodelElementMatchingResponse(
@@ -201,12 +209,16 @@ class SemanticMatchingService(
             matching_result = []
             for result in results_with_nlp:
                 matching_result.append(
-                    semantic_matching_interface.response.SubmodelElementMatch(
+                    #semantic_matching_interface.response.SubmodelElementMatch(
+                    NlpSubmodelElementMatch(
                         matching_method=result['matching_method'],
                         matching_algorithm=result['matching_algorithm'],
                         matching_score=result['matching_distance'],
                         submodel_identifier_id=result['submodel_id'],
-                        id_short_path=result["id_short_path"]
+                        id_short_path=result["id_short_path"],
+                        preferred_name = result["preferred_name"],
+                        definition = result["definition"],  
+                        semantic_id = result["semantic_id"]
                     )
                 )
             return semantic_matching_interface.response.SubmodelElementMatchingResponse(
