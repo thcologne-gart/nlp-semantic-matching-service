@@ -1,4 +1,5 @@
 import json
+import pickle
 
 import fastapi
 import uvicorn
@@ -7,12 +8,15 @@ import chromadb
 from chromadb.config import Settings
 import numpy as np
 import pandas as pd
+from sentence_transformers import SentenceTransformer
 import semantic_matching_interface.interface
 import semantic_matching_interface.query
 import semantic_matching_interface.response
 
 from nlp_pipeline import classify_elements, get_right_collection, classify_elements_one_aas
 from compare_semantic_id import compare_semantic_ids, compare_semantic_ids_one_aas
+from get_database import ask_database, delete_collection
+from database_build import index_corpus
 
 # Create own class for the resonse of the semantic matching service which extends the class from response.py
 class NlpSubmodelElementMatch(semantic_matching_interface.response.SubmodelElementMatch): 
@@ -232,9 +236,65 @@ class SemanticMatchingService(
             query: semantic_matching_interface.query.MatchObjectsQuery
     ):
         raise NotImplementedError
+    
+class AasPreparingHandling (semantic_matching_interface.interface.AbstractSemanticMatchingInterface):
+    def __init__(self):
+
+        self.router = fastapi.APIRouter()
+        self.router.add_api_route(
+            "/post_aas",
+            self.post_aas,
+            methods=["POST"]
+        )
+        self.router.add_api_route(
+            "/get_aas",
+            self.get_aas,
+            methods=["GET"]
+        )
+        self.router.add_api_route(
+            "/delete_aas",
+            self.delete_aas,
+            methods=["DELETE"]
+        )
+        self.model = SentenceTransformer("gart-labor/eng-distilBERT-se-eclass")
+
+        with open("nlp_semantic_matching_service/metadata.pickle", "rb") as handle:
+            #global metalabel
+            self.metalabel = pickle.load(handle)
+
+        #global client_chroma
+        self.client_chroma = chromadb.Client(
+            Settings(
+                chroma_api_impl="rest",
+                # chroma_server_host muss angepasst werden nach jedem Neustart AWS
+                chroma_server_host="3.75.91.79",
+                chroma_server_http_port=8000,
+            )
+        )
+
+    async def post_aas(self, aas: fastapi.UploadFile = fastapi.File(...)):
+
+        print(type(aas))
+        data = json.load(aas.file)
+        print(type(data))
+        
+        # aas = new_file
+        #aas, submodels, conceptDescriptions, assets, aas_df, collection, aas_name= index_corpus(data, model, metalabel, client_chroma)
+        collection = index_corpus(aas, data, self.model, self.metalabel, self.client_chroma)
+        ready = 'AAS ready'
+        return ready
+    
+    async def get_aas(self):
+        aas = ask_database(self.client_chroma)
+        return aas
+
+    async def delete_aas(self, aas_id: str):
+        aas_in_database = delete_collection(self.client_chroma, aas_id)
+        return aas_in_database
 
 
 if __name__ == "__main__":
     APP = fastapi.FastAPI()
     APP.include_router(SemanticMatchingService().router)
+    APP.include_router(AasPreparingHandling().router)
     uvicorn.run(APP, host="127.0.0.1", port=8002)
