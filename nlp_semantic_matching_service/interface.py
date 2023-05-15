@@ -1,6 +1,8 @@
 import json
 import pickle
+from typing import List
 
+from pydantic import BaseModel
 import fastapi
 import uvicorn
 import basyx.aas.model
@@ -18,11 +20,15 @@ from compare_semantic_id import compare_semantic_ids, compare_semantic_ids_one_a
 from get_database import ask_database, delete_collection
 from database_build import index_corpus
 
+class NlpSemanticMatchingServiceInformation(BaseModel):
+    matching_methods: List[semantic_matching_interface.response.SemanticMatchingServiceInformation   ]
+
 # Create own class for the resonse of the semantic matching service which extends the class from response.py
 class NlpSubmodelElementMatch(semantic_matching_interface.response.SubmodelElementMatch): 
     preferred_name: str
     definition: str
     semantic_id: str
+    submodel_identifier_id: str
 
 class SemanticMatchingService(
     semantic_matching_interface.interface.AbstractSemanticMatchingInterface
@@ -32,7 +38,16 @@ class SemanticMatchingService(
         Settings(
             chroma_api_impl="rest",
             # chroma_server_host muss angepasst werden nach jedem Neustart AWS
-            chroma_server_host="3.75.91.79",
+            chroma_server_host="3.69.29.32",
+            chroma_server_http_port=8000,
+        )
+    )
+
+    client_chroma_eclass = chromadb.Client(
+        Settings(
+            chroma_api_impl="rest",
+            # chroma_server_host muss angepasst werden nach jedem Neustart AWS
+            chroma_server_host="3.75.243.206",
             chroma_server_http_port=8000,
         )
     )
@@ -40,28 +55,38 @@ class SemanticMatchingService(
     def semantic_matching_service_information(self):
         matching_methods_list = [
             {"matching_method": "NLP without Metadata",
-             "matching_algorithm": "Semantic search, k-nearest-neighbor with squared L2 distance (euclidean distance), with model gart-labor/eng-distilBERT-se-eclass"},
+             "matching_algorithm": "Semantic search, k-nearest-neighbor with squared L2 distance (euclidean distance), with model gart-labor/eng-distilBERT-se-eclass",
+             "required_parameters": ["semanticId", "preferredName", "definition"],
+             "optional_parameters": ["unit", "datatype"]},
             {"matching_method": "NLP with Metadata",
-             "matching_algorithm": "Semantic search, k-nearest-neighbor with squared L2 distance (euclidean distance), with model gart-labor/eng-distilBERT-se-eclass and classifier with metadata (unit and or datatype)"},
-            {"matching_method": "Semantic equivalent, same semantic Id", "matching_algorithm": "None"}
-        ]
+             "matching_algorithm": "Semantic search, k-nearest-neighbor with squared L2 distance (euclidean distance), with model gart-labor/eng-distilBERT-se-eclass and classifier with metadata (unit and or datatype)",
+             "required_parameters": ["semanticId", "preferredName", "definition"],
+             "optional_parameters": ["unit", "datatype"]},
+            {"matching_method": "Semantic equivalent, same semantic Id",
+             "matching_algorithm": "None",
+            "required_parameters": ["semanticId"],
+            "optional_parameters": ["preferredName", "definition", "unit", "datatype"]}  
+        ]      
         matching_methods = []
-        """
+        
         for method in matching_methods_list:
             matching_methods.append(
                 #semantic_matching_interface.response.SingleSemanticMatchingServiceInformation(
-                semantic_matching_interface.response.SingleSemanticMatchingServiceInformation(
+                semantic_matching_interface.response.SemanticMatchingServiceInformation(
                     matching_method=method["matching_method"],
-                    matching_algorithm=method["matching_algorithm"]
-                )
+                    matching_algorithm=method["matching_algorithm"],
+                    required_parameters=method["required_parameters"],
+                    optional_parameters=method["optional_parameters"]
             )
-        """
-        return semantic_matching_interface.response.SemanticMatchingServiceInformation(
-            #matching_methods=matching_methods,
-            matching_method='NLP without Metadata',
-            matching_algorithm='Semantic search, k-nearest-neighbor with squared L2 distance (euclidean distance), with model gart-labor/eng-distilBERT-se-eclass',
-            required_parameters=["semanticId", "preferredName", "definition"],
-            optional_parameters=["unit", "dataType"]
+        )
+        print(matching_methods)
+        #return semantic_matching_interface.response.SemanticMatchingServiceInformation(
+        return NlpSemanticMatchingServiceInformation(
+            matching_methods=matching_methods,
+            #matching_method='NLP without Metadata',
+            #matching_algorithm='Semantic search, k-nearest-neighbor with squared L2 distance (euclidean distance), with model gart-labor/eng-distilBERT-se-eclass',
+            #required_parameters=["semanticId", "preferredName", "definition"],
+            #optional_parameters=["unit", "dataType"]
         )
 
     def semantic_query_asset_administration_shell(
@@ -225,6 +250,7 @@ class SemanticMatchingService(
                         semantic_id = result["semantic_id"]
                     )
                 )
+            print(matching_result)
             return semantic_matching_interface.response.SubmodelElementMatchingResponse(
                 matching_result=matching_result,
                 aas_identifier_id=query.aas_identifier_id,
@@ -267,10 +293,21 @@ class AasPreparingHandling (semantic_matching_interface.interface.AbstractSemant
             Settings(
                 chroma_api_impl="rest",
                 # chroma_server_host muss angepasst werden nach jedem Neustart AWS
-                chroma_server_host="3.75.91.79",
+                chroma_server_host="3.69.29.32",
                 chroma_server_http_port=8000,
             )
         )
+
+        self.client_chroma_eclass = chromadb.Client(
+            Settings(
+                chroma_api_impl="rest",
+                # chroma_server_host muss angepasst werden nach jedem Neustart AWS
+                chroma_server_host="3.75.243.206",
+                chroma_server_http_port=8000,
+            )
+        )
+
+        
 
     async def post_aas(self, aas: fastapi.UploadFile = fastapi.File(...)):
 
@@ -280,7 +317,7 @@ class AasPreparingHandling (semantic_matching_interface.interface.AbstractSemant
         
         # aas = new_file
         #aas, submodels, conceptDescriptions, assets, aas_df, collection, aas_name= index_corpus(data, model, metalabel, client_chroma)
-        collection = index_corpus(aas, data, self.model, self.metalabel, self.client_chroma)
+        collection = index_corpus(aas, data, self.model, self.metalabel, self.client_chroma, self.client_chroma_eclass)
         ready = 'AAS ready'
         return ready
     

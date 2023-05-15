@@ -15,7 +15,7 @@ import requests
 
 import os
 import openai
-openai.api_key = "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"
+openai.api_key = "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"
 
 def prepare_cd(conceptDescriptions):
     df_cd = pd.DataFrame(
@@ -84,19 +84,42 @@ def prepare_cd(conceptDescriptions):
 
 def get_values(submodel_element, id_short_path):
     # Auslesen der Submodel Element Werte
+    #print(submodel_element)
     se_type = submodel_element["modelType"]["name"]
     se_semantic_id = submodel_element["semanticId"]["keys"][0]["value"]
     se_semantic_id_local = submodel_element["semanticId"]["keys"][0]["local"]
     se_id_short = submodel_element["idShort"]
     id_short_path = id_short_path + '.' + se_id_short
     value = []
-    se_value = submodel_element["value"]
+    if se_type == 'MultiLanguageProperty':
+        se_value = submodel_element["value"]["langString"][0]["text"]
+    else:
+        se_value = submodel_element["value"]
     value.append(se_value)
 
-    return se_type, se_semantic_id, se_semantic_id_local, se_id_short, value, id_short_path
+    if 'descriptions' in submodel_element:
+        definition = submodel_element["descriptions"]
+        if len(definition) > 1:
+            for definition_variant in definition:
+                if (
+                    definition_variant["language"] == "EN"
+                    or definition_variant["language"] == "en"
+                    or definition_variant["language"] == "EN?"
+                ):
+                    chosen_def = definition_variant["text"]
+        elif len(definition) == 1:
+            chosen_def = definition[0]["text"]
+        elif len(definition) == 0:
+            chosen_def = "NaN"
+    else: 
+        chosen_def = 'NaN'
+    
+    print(chosen_def)
+
+    return se_type, se_semantic_id, se_semantic_id_local, se_id_short, value, id_short_path, chosen_def
 
 
-def get_concept_description(semantic_id, df_cd):
+def get_concept_description(semantic_id, df_cd, se_id_short, se_description):
     """
     Retrieve the concept description for a given semantic id.
 
@@ -112,21 +135,35 @@ def get_concept_description(semantic_id, df_cd):
     pandas.DataFrame
         The concept description.
     """
+
     cd_content = df_cd.loc[df_cd["SemanticId"] == semantic_id]
 
     if cd_content.empty:
         cd_content = pd.DataFrame(
             {
                 "SemanticId": semantic_id,
-                "Definition": "NaN",
-                "PreferredName": "NaN",
+                "Definition": se_description,
+                "PreferredName": se_id_short,
                 "Datatype": "NaN",
                 "Unit": "NaN",
             },
             index=[0],
         )
+    print(cd_content)
+    if cd_content.iloc[0]['Definition'] == 'NaN':
+        #cd_content.at[0, 'Definition'] = se_description
+        cd_content_copy = cd_content.iloc[[0]].copy()
+        cd_content_copy['Definition'] = se_description
+        cd_content.iloc[[0]] = cd_content_copy
 
+    if cd_content.iloc[0]['PreferredName'] == 'NaN':
+        #cd_content.at[0, 'PreferredName'] = se_id_short
+        cd_content_copy = cd_content.iloc[[0]].copy()
+        cd_content_copy['PreferredName'] = se_id_short
+        cd_content.iloc[[0]] = cd_content_copy
     cd_content = cd_content.iloc[0]
+    print(cd_content)
+
     return cd_content
 
 
@@ -148,20 +185,20 @@ def get_values_sec(
         content = []
         content.append(element)
 
-        se_type, se_semantic_id, se_semantic_id_local, se_id_short, value, sec_id_short_path = get_values(
+        se_type, se_semantic_id, se_semantic_id_local, se_id_short, value, sec_id_short_path, se_description = get_values(
             element, sec_id_short_path
         )
         if se_type == "SubmodelElementCollection":
             if se_semantic_id_local == True:
-                cd_content = get_concept_description(se_semantic_id, df_cd)
+                cd_content = get_concept_description(se_semantic_id, df_cd, se_id_short, se_description)
                 definition = cd_content["Definition"]
                 preferred_name = cd_content["PreferredName"]
                 datatype = cd_content["Datatype"]
                 unit = cd_content["Unit"]
 
             else:
-                definition = "NaN"
-                preferred_name = "NaN"
+                definition = se_description
+                preferred_name = se_id_short
                 datatype = "NaN"
                 unit = "NaN"
 
@@ -205,7 +242,7 @@ def get_values_sec(
 
         else:
             if se_semantic_id_local == True:
-                cd_content = get_concept_description(se_semantic_id, df_cd)
+                cd_content = get_concept_description(se_semantic_id, df_cd, se_id_short, se_description)
                 definition = cd_content["Definition"]
                 preferred_name = cd_content["PreferredName"]
                 datatype = cd_content["Datatype"]
@@ -441,7 +478,7 @@ def set_up_chroma(
 
     return collection
 
-def predict_aas_type(aas_df, model):
+def predict_aas_type(aas_df, model, client_chroma_eclass):
     queries = []
     semantic_id_manufacturer = "0173-1#02-AAO677#002"
     manufacturer_name = "Manufacturer name"
@@ -511,37 +548,75 @@ def predict_aas_type(aas_df, model):
                 pf_value = aas_se_value
     
     aas_id_short = aas_df.loc[0]['AASIdShort'] 
-    open_ai_query = f'The following properties describe a technical component and their values: Manufacturer name: {mn_value}, Manufacturer product description: {pd_value}, Product family: {pf_value}, Component Identifier: {aas_id_short}. Classify this component.'
-    print(open_ai_query)
-
+    query = f'{mn_value}, {pd_value}, {pf_value}'
+    #open_ai_query = f'The following properties describe a technical component and their values: Manufacturer name: {mn_value}, Manufacturer product description: {pd_value}, Product family: {pf_value}, Component Identifier: {aas_id_short}. Classify this component.'
+    #components = ['Electric motor', 'Pump', 'Transducer', 'Control valve', 'Bus coupler', 'Controller', 'Absoulte encoder', 'Inverter']
+    #open_ai_query = f'The following properties describe a technical component and their values: Manufacturer name: {mn_value}, Manufacturer product description: {pd_value}, Product family: {pf_value}, Component Identifier: {aas_id_short}. Which of the following technical components from the list is described by the properties given? {components}.'
+    print(query)
+    """
     completion = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant to classify technical components based on properties that describe them."},
-        {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: GRUNDFOS, Manufacturer product description: MGE 71A2-14FT85C, Product family: MGE 71, Component Identifier: N13_Motor_AAS. Classify this component."},
-        {"role": "assistant", "content": "Electric motor"},
-        {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Endress+Hauser, Manufacturer product description: Messumformer, Product family: Mycom S CLM153, Component Identifier: T12_Messumformer_AAS. Classify this component."},
-        {"role": "assistant", "content": "Transducer"},
-        {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Emerson Electric Co., Manufacturer product description: Stellventil, Product family: GX Stellventil, Component Identifier: Y21_Stellventil_AAS. Classify this component."},
-        {"role": "assistant", "content": "Control valve"},
-        {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Schneider Electric, Manufacturer product description: Bus coupler TeSys island, Ethernet switch (EtherNet IP / Modbus TCP), Product family: not defined, Component Identifier: SE_Tesys_Island_Header. Classify this component. "},
-        {"role": "assistant", "content": "Bus coupler"},
-        {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Festo SE & Co. KG, Manufacturer product description: Controller, Product family: CPX-E-CEC-M1-PN, Component Identifier: AAS_CPX-E-CEC-M1-PN. Classify this component."},
-        {"role": "assistant", "content": "Controller"},
-        {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: SICK AG, Manufacturer product description: AHM36B-S4QC012x12, Product family: Encoder, Component Identifier: SICK_AHM36B_S4QC012x12_1092017. Classify this component."},
-        {"role": "assistant", "content": "Absolute Encoder"},
-        {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Lenze Automation GmbH, Manufacturer product description: i950 Inverter, Product family: not defined, Component Identifier: Lenze_i950. Classify this component."},
-        {"role": "assistant", "content": "Inverter"},
-        {"role": "user", "content": open_ai_query}
-    ],
-    temperature = 0.2
+        model="gpt-3.5-turbo",
+        
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant to classify technical components based on properties that describe them."},
+            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: GRUNDFOS, Manufacturer product description: MGE 71A2-14FT85C, Product family: MGE 71, Component Identifier: N13_Motor_AAS. Classify this component."},
+            {"role": "assistant", "content": "Electric motor"},
+            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Endress+Hauser, Manufacturer product description: Messumformer, Product family: Mycom S CLM153, Component Identifier: T12_Messumformer_AAS. Classify this component."},
+            {"role": "assistant", "content": "Transducer"},
+            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Emerson Electric Co., Manufacturer product description: Stellventil, Product family: GX Stellventil, Component Identifier: Y21_Stellventil_AAS. Classify this component."},
+            {"role": "assistant", "content": "Control valve"},
+            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Schneider Electric, Manufacturer product description: Bus coupler TeSys island, Ethernet switch (EtherNet IP / Modbus TCP), Product family: not defined, Component Identifier: SE_Tesys_Island_Header. Classify this component. "},
+            {"role": "assistant", "content": "Bus coupler"},
+            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Festo SE & Co. KG, Manufacturer product description: Controller, Product family: CPX-E-CEC-M1-PN, Component Identifier: AAS_CPX-E-CEC-M1-PN. Classify this component."},
+            {"role": "assistant", "content": "Controller"},
+            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: SICK AG, Manufacturer product description: AHM36B-S4QC012x12, Product family: Encoder, Component Identifier: SICK_AHM36B_S4QC012x12_1092017. Classify this component."},
+            {"role": "assistant", "content": "Absolute Encoder"},
+            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Lenze Automation GmbH, Manufacturer product description: i950 Inverter, Product family: not defined, Component Identifier: Lenze_i950. Classify this component."},
+            {"role": "assistant", "content": "Inverter"},
+            {"role": "user", "content": open_ai_query}
+        ],
+        #messages=[
+            #{"role": "system", "content": "You are a helpful assistant to classify technical components based on properties that describe them."},
+            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: GRUNDFOS, Manufacturer product description: MGE 71A2-14FT85C, Product family: MGE 71, Component Identifier: N13_Motor_AAS. Which of the following technical components from the list is described by the properties given? {components}."},
+            #{"role": "assistant", "content": "Electric motor"},
+            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Endress+Hauser, Manufacturer product description: Messumformer, Product family: Mycom S CLM153, Component Identifier: T12_Messumformer_AAS. Which of the following technical components from the list is described by the properties given? {components}."},
+            #{"role": "assistant", "content": "Transducer"},
+            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Emerson Electric Co., Manufacturer product description: Stellventil, Product family: GX Stellventil, Component Identifier: Y21_Stellventil_AAS. Which of the following technical components from the list is described by the properties given? {components}."},
+            #{"role": "assistant", "content": "Control valve"},
+            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Schneider Electric, Manufacturer product description: Bus coupler TeSys island, Ethernet switch (EtherNet IP / Modbus TCP), Product family: not defined, Component Identifier: SE_Tesys_Island_Header. Which of the following technical components from the list is described by the properties given? {components}. "},
+            #{"role": "assistant", "content": "Bus coupler"},
+            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Festo SE & Co. KG, Manufacturer product description: Controller, Product family: CPX-E-CEC-M1-PN, Component Identifier: AAS_CPX-E-CEC-M1-PN. Which of the following technical components from the list is described by the properties given? {components}."},
+            #{"role": "assistant", "content": "Controller"},
+            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: SICK AG, Manufacturer product description: AHM36B-S4QC012x12, Product family: Encoder, Component Identifier: SICK_AHM36B_S4QC012x12_1092017. Which of the following technical components from the list is described by the properties given? {components}."},
+            #{"role": "assistant", "content": "Absolute Encoder"},
+            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Lenze Automation GmbH, Manufacturer product description: i950 Inverter, Product family: not defined, Component Identifier: Lenze_i950. Which of the following technical components from the list is described by the properties given? {components}."},
+            #{"role": "assistant", "content": "Inverter"},
+            #{"role": "user", "content": open_ai_query}
+        #],
+        temperature = 0.2
     )
     aas_type = completion.choices[0].message['content']
+    """
+    openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+                api_key="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",
+                model_name="text-embedding-ada-002"
+            )
+    collection = client_chroma_eclass.get_collection(name="eclass_embeddings", embedding_function=openai_ef)
+    eclass_category = collection.query(
+        query_texts = [query],
+        n_results = 1,
+    )
+    print(eclass_category)
+    aas_eclass_type = eclass_category['metadatas'][0][0]['PreferredName']
+    aas_eclass_type_irdi = eclass_category['metadatas'][0][0]['IRDI']
     #print(aas_type)
     #print(completion)
+    print(aas_eclass_type)
+    print(aas_eclass_type_irdi)
 
-    aas_df['AASType'] = aas_type
-    print(aas_df.loc[0])
+    aas_df['AASType'] = aas_eclass_type
+    aas_df['AASTypeEclassIrdi'] = aas_eclass_type_irdi
+    #print(aas_df.loc[0])
 
     return aas_df
 
@@ -564,7 +639,8 @@ def read_aas(data, aas, submodels, assets, conceptDescriptions, submodels_ids, m
             "Datatype",
             "Unit",
             "IdShortPath",
-            "AASType"
+            "AASType",
+            "AASTypeEclassIrdi"
         ]
     )
     aas_id = aas[0]["identification"]["id"]
@@ -595,20 +671,21 @@ def read_aas(data, aas, submodels, assets, conceptDescriptions, submodels_ids, m
                     se_semantic_id_local,
                     se_id_short,
                     value,
-                    id_short_path
+                    id_short_path,
+                    se_description
                 ) = get_values(submodel_element, id_short_path)
 
                 # When Concept Description local dann auslesen der Concept Description
                 if se_semantic_id_local == True:
-                    cd_content = get_concept_description(se_semantic_id, df_cd)
+                    cd_content = get_concept_description(se_semantic_id, df_cd, se_id_short, se_description)
                     definition = cd_content["Definition"]
                     preferred_name = cd_content["PreferredName"]
                     datatype = cd_content["Datatype"]
                     unit = cd_content["Unit"]
 
                 else:
-                    definition = "NaN"
-                    preferred_name = "NaN"
+                    definition = se_description
+                    preferred_name = se_id_short
                     datatype = "NaN"
                     unit = "NaN"
                 new_row = pd.DataFrame(
@@ -631,6 +708,8 @@ def read_aas(data, aas, submodels, assets, conceptDescriptions, submodels_ids, m
                         "IdShortPath": id_short_path
                     }
                 )
+                print(new_row.loc[0, 'Definition'])
+                print(new_row.loc[0, 'PreferredName'])
                 df = pd.concat([df, new_row], ignore_index=True)
 
                 # Wenn Submodel Element Collection dann diese Werte auch auslesen
@@ -696,7 +775,7 @@ def post_aas_basyx(aas_file, data, aas_id, aas_name):
     return response
 
 
-def index_corpus(aas_file, data, model, metalabel, client_chroma):
+def index_corpus(aas_file, data, model, metalabel, client_chroma, client_chroma_eclass):
     #aas_response = post_aas_basyx(data)
     # Start Punkt
     aas = data["assetAdministrationShells"]
@@ -715,7 +794,7 @@ def index_corpus(aas_file, data, model, metalabel, client_chroma):
     )
     # aas_df_embeddings = encode(aas_df, model)
     aas_df = encode(aas_df, model)
-    aas_df = predict_aas_type(aas_df, model)
+    aas_df = predict_aas_type(aas_df, model, client_chroma_eclass)
     metadata, aas_index_str, se_content, se_embedding_name_definition = convert_to_list(
         aas_df
     )

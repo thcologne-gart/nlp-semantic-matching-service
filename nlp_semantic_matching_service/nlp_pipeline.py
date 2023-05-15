@@ -135,6 +135,7 @@ def query_aas(model, metalabel, preferred_name, definition, unit, datatype, coll
         all_items = collection.count()
         all_items = all_items - 2
         print(all_items)
+        print("Querying Chroma DB")
         # See whether metadata category is in database
         try:
             with_metadata = collection.query(
@@ -188,6 +189,7 @@ def query_aas(model, metalabel, preferred_name, definition, unit, datatype, coll
         #print(result)
         # Old structure for results (if we want to use things like the matched submodel element later on)
         final_results = []
+        print("Result from Chroma DB")
         print(number_elements)
         for i in range(0, number_elements):
             normalized_distance = result['distances'][0][i]/highest_distance

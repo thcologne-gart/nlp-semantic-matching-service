@@ -192,11 +192,12 @@ def ask_database(client):
         first = collection.get(ids=['1'])
         aas_id = first['metadatas'][0]['AASId']
         aas_type = first['metadatas'][0]['AASType']
+        aas_type_eclass_irdi = first['metadatas'][0]['AASTypeEclassIrdi']
         print(aas_id)
         aas_content = first['metadatas'][0]['AASContent']
         #print(aas_content)
         aas_id_short = first['metadatas'][0]['AASIdShort']
-        aas_dict = {'aas_id': aas_id, 'aas_id_short': aas_id_short, 'number_items': items, 'aas_content': aas_content, 'aas_type': aas_type}
+        aas_dict = {'aas_id': aas_id, 'aas_id_short': aas_id_short, 'number_items': items, 'aas_content': aas_content, 'aas_type': aas_type, 'aas_type_eclass_irdi': aas_type_eclass_irdi}
         aas_list.append(aas_dict)
     
     return aas_list
