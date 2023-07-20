@@ -58,7 +58,7 @@ class SemanticMatchingService(
     client_chroma_eclass = chromadb.Client(
         Settings(
             chroma_api_impl="rest",
-            # Chrom Server auf dem die ECLASS Sentecne Embeddings gespeichert werden sollen
+            # Chrom Server auf dem die ECLASS Sentecne Embeddings gespeichert sind
             chroma_server_host="",
             chroma_server_http_port=8000,
         )
@@ -339,7 +339,7 @@ class AasPreparingHandling (semantic_matching_interface.interface.AbstractSemant
         self.client_chroma_eclass = chromadb.Client(
             Settings(
                 chroma_api_impl="rest",
-                # Chrom Server auf dem die ECLASS Embeddings gespeichert werden sollen
+                # Chrom Server auf dem die ECLASS Embeddings gespeichert sind
                 chroma_server_host="",
                 chroma_server_http_port=8000,
             )
