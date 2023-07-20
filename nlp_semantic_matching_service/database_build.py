@@ -15,7 +15,7 @@ import requests
 
 import os
 import openai
-openai.api_key = "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"
+openai.api_key = ""
 
 def prepare_cd(conceptDescriptions):
     df_cd = pd.DataFrame(
