@@ -9,7 +9,7 @@ import pickle
 import chromadb
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
-from chromadb.db.clickhouse import NoDatapointsException
+#from chromadb.db.clickhouse import NoDatapointsException
 
 import requests
 
@@ -92,6 +92,7 @@ def get_values(submodel_element, id_short_path):
     id_short_path = id_short_path + '.' + se_id_short
     value = []
     if se_type == 'MultiLanguageProperty':
+        print(submodel_element)
         se_value = submodel_element["value"]["langString"][0]["text"]
     else:
         se_value = submodel_element["value"]
@@ -447,19 +448,23 @@ def set_up_chroma(
         model_name="gart-labor/eng-distilBERT-se-eclass"
     )
     collection = client.get_or_create_collection(
-        name=aas_name, embedding_function=emb_fn
+        name=aas_name, embedding_function=emb_fn, metadata={"hnsw:space": "cosine"}
     )
+    print(client.list_collections())
 
     aas_content_string = []
     # Umwandeln in Json damit es in db geschrieben werden kann
     for element in se_content:
         content = json.dumps(element)
         aas_content_string.append(content)
-
+    
+    print(client.heartbeat())
+    print(collection)
+    print(collection.count())
     items = collection.count()  # returns the number of items in the collection
     #print(collection)
     print("Datenbank erstellt, Anzahl Items:")
-    #print(items)
+    print(items)
     if items == 0: 
         # Hinzufügen der SE Inhalte, der Embeddings und weiterer Metadaten in collection der Datenbank
         collection.add(
@@ -549,58 +554,13 @@ def predict_aas_type(aas_df, model, client_chroma_eclass):
     
     aas_id_short = aas_df.loc[0]['AASIdShort'] 
     query = f'{mn_value}, {pd_value}, {pf_value}'
-    #open_ai_query = f'The following properties describe a technical component and their values: Manufacturer name: {mn_value}, Manufacturer product description: {pd_value}, Product family: {pf_value}, Component Identifier: {aas_id_short}. Classify this component.'
-    #components = ['Electric motor', 'Pump', 'Transducer', 'Control valve', 'Bus coupler', 'Controller', 'Absoulte encoder', 'Inverter']
-    #open_ai_query = f'The following properties describe a technical component and their values: Manufacturer name: {mn_value}, Manufacturer product description: {pd_value}, Product family: {pf_value}, Component Identifier: {aas_id_short}. Which of the following technical components from the list is described by the properties given? {components}.'
     print(query)
-    """
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant to classify technical components based on properties that describe them."},
-            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: GRUNDFOS, Manufacturer product description: MGE 71A2-14FT85C, Product family: MGE 71, Component Identifier: N13_Motor_AAS. Classify this component."},
-            {"role": "assistant", "content": "Electric motor"},
-            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Endress+Hauser, Manufacturer product description: Messumformer, Product family: Mycom S CLM153, Component Identifier: T12_Messumformer_AAS. Classify this component."},
-            {"role": "assistant", "content": "Transducer"},
-            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Emerson Electric Co., Manufacturer product description: Stellventil, Product family: GX Stellventil, Component Identifier: Y21_Stellventil_AAS. Classify this component."},
-            {"role": "assistant", "content": "Control valve"},
-            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Schneider Electric, Manufacturer product description: Bus coupler TeSys island, Ethernet switch (EtherNet IP / Modbus TCP), Product family: not defined, Component Identifier: SE_Tesys_Island_Header. Classify this component. "},
-            {"role": "assistant", "content": "Bus coupler"},
-            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Festo SE & Co. KG, Manufacturer product description: Controller, Product family: CPX-E-CEC-M1-PN, Component Identifier: AAS_CPX-E-CEC-M1-PN. Classify this component."},
-            {"role": "assistant", "content": "Controller"},
-            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: SICK AG, Manufacturer product description: AHM36B-S4QC012x12, Product family: Encoder, Component Identifier: SICK_AHM36B_S4QC012x12_1092017. Classify this component."},
-            {"role": "assistant", "content": "Absolute Encoder"},
-            {"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Lenze Automation GmbH, Manufacturer product description: i950 Inverter, Product family: not defined, Component Identifier: Lenze_i950. Classify this component."},
-            {"role": "assistant", "content": "Inverter"},
-            {"role": "user", "content": open_ai_query}
-        ],
-        #messages=[
-            #{"role": "system", "content": "You are a helpful assistant to classify technical components based on properties that describe them."},
-            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: GRUNDFOS, Manufacturer product description: MGE 71A2-14FT85C, Product family: MGE 71, Component Identifier: N13_Motor_AAS. Which of the following technical components from the list is described by the properties given? {components}."},
-            #{"role": "assistant", "content": "Electric motor"},
-            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Endress+Hauser, Manufacturer product description: Messumformer, Product family: Mycom S CLM153, Component Identifier: T12_Messumformer_AAS. Which of the following technical components from the list is described by the properties given? {components}."},
-            #{"role": "assistant", "content": "Transducer"},
-            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Emerson Electric Co., Manufacturer product description: Stellventil, Product family: GX Stellventil, Component Identifier: Y21_Stellventil_AAS. Which of the following technical components from the list is described by the properties given? {components}."},
-            #{"role": "assistant", "content": "Control valve"},
-            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Schneider Electric, Manufacturer product description: Bus coupler TeSys island, Ethernet switch (EtherNet IP / Modbus TCP), Product family: not defined, Component Identifier: SE_Tesys_Island_Header. Which of the following technical components from the list is described by the properties given? {components}. "},
-            #{"role": "assistant", "content": "Bus coupler"},
-            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Festo SE & Co. KG, Manufacturer product description: Controller, Product family: CPX-E-CEC-M1-PN, Component Identifier: AAS_CPX-E-CEC-M1-PN. Which of the following technical components from the list is described by the properties given? {components}."},
-            #{"role": "assistant", "content": "Controller"},
-            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: SICK AG, Manufacturer product description: AHM36B-S4QC012x12, Product family: Encoder, Component Identifier: SICK_AHM36B_S4QC012x12_1092017. Which of the following technical components from the list is described by the properties given? {components}."},
-            #{"role": "assistant", "content": "Absolute Encoder"},
-            #{"role": "user", "content": "The following properties describe a technical component and their values: Manufacturer name: Lenze Automation GmbH, Manufacturer product description: i950 Inverter, Product family: not defined, Component Identifier: Lenze_i950. Which of the following technical components from the list is described by the properties given? {components}."},
-            #{"role": "assistant", "content": "Inverter"},
-            #{"role": "user", "content": open_ai_query}
-        #],
-        temperature = 0.2
-    )
-    aas_type = completion.choices[0].message['content']
-    """
     openai_ef = embedding_functions.OpenAIEmbeddingFunction(
-                api_key="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",
+                # Open AI API Key
+                api_key="",
                 model_name="text-embedding-ada-002"
             )
+    print(client_chroma_eclass.list_collections())
     collection = client_chroma_eclass.get_collection(name="eclass_embeddings", embedding_function=openai_ef)
     eclass_category = collection.query(
         query_texts = [query],
@@ -639,8 +599,8 @@ def read_aas(data, aas, submodels, assets, conceptDescriptions, submodels_ids, m
             "Datatype",
             "Unit",
             "IdShortPath",
-            "AASType",
-            "AASTypeEclassIrdi"
+            #"AASType",
+            #"AASTypeEclassIrdi"
         ]
     )
     aas_id = aas[0]["identification"]["id"]
@@ -749,7 +709,8 @@ def post_aas_basyx(aas_file, data, aas_id, aas_name):
     print(aas)
 
     aas_string = json.dumps(aas)
-    aas_server = "http://3.83.126.51:4001/aasServer/shells"
+    # AAS Basyx Server
+    aas_server = ""
     
     response = requests.get(aas_server)
     print(response)
@@ -776,6 +737,7 @@ def post_aas_basyx(aas_file, data, aas_id, aas_name):
 
 
 def index_corpus(aas_file, data, model, metalabel, client_chroma, client_chroma_eclass):
+#def index_corpus(aas_file, data, model, metalabel, client_chroma):
     #aas_response = post_aas_basyx(data)
     # Start Punkt
     aas = data["assetAdministrationShells"]
@@ -794,7 +756,9 @@ def index_corpus(aas_file, data, model, metalabel, client_chroma, client_chroma_
     )
     # aas_df_embeddings = encode(aas_df, model)
     aas_df = encode(aas_df, model)
+    
     aas_df = predict_aas_type(aas_df, model, client_chroma_eclass)
+
     metadata, aas_index_str, se_content, se_embedding_name_definition = convert_to_list(
         aas_df
     )
@@ -810,7 +774,3 @@ def index_corpus(aas_file, data, model, metalabel, client_chroma, client_chroma_
     aas_response = post_aas_basyx(aas_file, data, aas_id, aas_name)
 
     return collection
-
-
-# if __name__ == '__main__':
-#    create_database = index_corpus(aas = 'festo_switch.json')

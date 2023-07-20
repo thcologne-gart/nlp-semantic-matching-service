@@ -4,6 +4,7 @@ from typing import List
 
 from pydantic import BaseModel
 import fastapi
+from fastapi.responses import JSONResponse
 import uvicorn
 import basyx.aas.model
 import chromadb
@@ -19,6 +20,12 @@ from nlp_pipeline import classify_elements, get_right_collection, classify_eleme
 from compare_semantic_id import compare_semantic_ids, compare_semantic_ids_one_aas
 from get_database import ask_database, delete_collection
 from database_build import index_corpus
+from database_idta import index_idta_submodels
+from create_idta_submodels import create_idta_submodel
+
+class CreateIdtaSubmodelRequest(BaseModel):
+    submodel_name: str
+    set_threshold: float
 
 class NlpSemanticMatchingServiceInformation(BaseModel):
     matching_methods: List[semantic_matching_interface.response.SemanticMatchingServiceInformation   ]
@@ -34,11 +41,16 @@ class SemanticMatchingService(
     semantic_matching_interface.interface.AbstractSemanticMatchingInterface
 ):
     # Get Chroma DB Client with indexed AASs
+    
+
+    #AWS
+
+
     client_chroma = chromadb.Client(
         Settings(
             chroma_api_impl="rest",
-            # chroma_server_host muss angepasst werden nach jedem Neustart AWS
-            chroma_server_host="3.69.29.32",
+            # Chroma Server auf dem die Sentence Embeddings der VWS gespeichert werden sollen
+            chroma_server_host="",
             chroma_server_http_port=8000,
         )
     )
@@ -46,11 +58,21 @@ class SemanticMatchingService(
     client_chroma_eclass = chromadb.Client(
         Settings(
             chroma_api_impl="rest",
-            # chroma_server_host muss angepasst werden nach jedem Neustart AWS
-            chroma_server_host="3.75.243.206",
+            # Chrom Server auf dem die ECLASS Sentecne Embeddings gespeichert werden sollen
+            chroma_server_host="",
             chroma_server_http_port=8000,
         )
     )
+
+    client_chroma_idta_submodels = chromadb.Client(
+        Settings(
+            chroma_api_impl="rest",
+            # Chrom Server auf dem die IDTA Embeddings der Teilmodelle gespeichert werden sollen
+            chroma_server_host="",
+            chroma_server_http_port=8000,
+        )
+    )
+    
 
     def semantic_matching_service_information(self):
         matching_methods_list = [
@@ -83,10 +105,6 @@ class SemanticMatchingService(
         #return semantic_matching_interface.response.SemanticMatchingServiceInformation(
         return NlpSemanticMatchingServiceInformation(
             matching_methods=matching_methods,
-            #matching_method='NLP without Metadata',
-            #matching_algorithm='Semantic search, k-nearest-neighbor with squared L2 distance (euclidean distance), with model gart-labor/eng-distilBERT-se-eclass',
-            #required_parameters=["semanticId", "preferredName", "definition"],
-            #optional_parameters=["unit", "dataType"]
         )
 
     def semantic_query_asset_administration_shell(
@@ -282,18 +300,38 @@ class AasPreparingHandling (semantic_matching_interface.interface.AbstractSemant
             self.delete_aas,
             methods=["DELETE"]
         )
+
+        self.router.add_api_route(
+            "/post_idta_submodels",
+            self.post_aas_idta_submodel,
+            methods=["POST"]
+        )
+
+        self.router.add_api_route(
+            "/create_idta_submodels",
+            self.create_new_idta_submodel,
+            methods=["POST"]
+        )
+
         self.model = SentenceTransformer("gart-labor/eng-distilBERT-se-eclass")
+        #self.model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
 
         with open("nlp_semantic_matching_service/metadata.pickle", "rb") as handle:
             #global metalabel
             self.metalabel = pickle.load(handle)
 
         #global client_chroma
+        
+
+        #AWS
+
+
+
         self.client_chroma = chromadb.Client(
             Settings(
                 chroma_api_impl="rest",
-                # chroma_server_host muss angepasst werden nach jedem Neustart AWS
-                chroma_server_host="3.69.29.32",
+                # Chrom Server auf dem die Sentence Embeddings der VWS gespeichert werden sollen
+                chroma_server_host="",
                 chroma_server_http_port=8000,
             )
         )
@@ -301,11 +339,36 @@ class AasPreparingHandling (semantic_matching_interface.interface.AbstractSemant
         self.client_chroma_eclass = chromadb.Client(
             Settings(
                 chroma_api_impl="rest",
-                # chroma_server_host muss angepasst werden nach jedem Neustart AWS
-                chroma_server_host="3.75.243.206",
+                # Chrom Server auf dem die ECLASS Embeddings gespeichert werden sollen
+                chroma_server_host="",
                 chroma_server_http_port=8000,
             )
         )
+
+        self.client_chroma_idta_submodels = chromadb.Client(
+            Settings(
+                chroma_api_impl="rest",
+                # Chrom Server auf dem die IDTA Embeddings der Teilmodelle gespeichert werden sollen
+                chroma_server_host="",
+                chroma_server_http_port=8000,
+            )
+        )
+        """
+        self.client_chroma = chromadb.Client(
+            Settings(
+                chroma_db_impl="duckdb+parquet",
+                persist_directory=".database/"
+                # chroma_server_host muss angepasst werden nach jedem Neustart AWS
+            )
+        )
+
+        self.client_chroma_idta_submodels = chromadb.Client(
+            Settings(
+                chroma_db_impl="duckdb+parquet",
+                persist_directory=".database/"
+            )
+        )
+        """
 
         
 
@@ -315,8 +378,8 @@ class AasPreparingHandling (semantic_matching_interface.interface.AbstractSemant
         data = json.load(aas.file)
         print(type(data))
         
-        # aas = new_file
-        #aas, submodels, conceptDescriptions, assets, aas_df, collection, aas_name= index_corpus(data, model, metalabel, client_chroma)
+        # Mit ECLASS collection = index_corpus(aas, data, self.model, self.metalabel, self.client_chroma, self.client_chroma_eclass)
+
         collection = index_corpus(aas, data, self.model, self.metalabel, self.client_chroma, self.client_chroma_eclass)
         ready = 'AAS ready'
         return ready
@@ -328,6 +391,53 @@ class AasPreparingHandling (semantic_matching_interface.interface.AbstractSemant
     async def delete_aas(self, aas_id: str):
         aas_in_database = delete_collection(self.client_chroma, aas_id)
         return aas_in_database
+    
+    # Create Chroma DB for IDTA Submodels
+    async def post_aas_idta_submodel(self, aas: fastapi.UploadFile = fastapi.File(...)):
+
+        print(type(aas))
+        data = json.load(aas.file)
+        print(type(data))
+
+        # Mit ECLASS  collection = index_corpus(aas, data, self.model, self.metalabel, self.client_chroma_idta_submodels, self.client_chroma_eclass)
+        collection = index_idta_submodels(aas, data, self.model, self.metalabel, self.client_chroma_idta_submodels)
+        ready = 'AAS ready'
+        return ready
+    
+    async def create_new_idta_submodel(
+            self, 
+            submodel_name: str = fastapi.Form(...),
+            set_threshold: float = fastapi.Form(...),
+            #request: CreateIdtaSubmodelRequest,
+            aas: fastapi.UploadFile = fastapi.File(...),
+        ):
+
+        print(type(aas))
+        data_dict = json.load(aas.file)
+        print(type(data_dict))
+
+        aas_with_idta, report = create_idta_submodel(
+            data_dict, 
+            self.model, 
+            self.client_chroma_idta_submodels, 
+            submodel_name, 
+            set_threshold)
+        
+        aas_file_name = 'final_aas.json'
+
+        headers = {
+            "Content-Disposition": f"attachment; filename={aas_file_name}"
+        }
+        response = JSONResponse(content=aas_with_idta, headers=headers)
+
+        report_name = 'matching_report.json'
+
+        headers_report = {
+            "Content-Disposition": f"attachment; filename={report_name}"
+        }
+        #response = [JSONResponse(content=aas_with_idta, headers=headers), JSONResponse(content=report, headers=headers_report)]
+
+        return response
 
 
 if __name__ == "__main__":

@@ -1,0 +1,290 @@
+[
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Producer Name",
+      "Definition": "Description: The name of the producer of a component; ",
+      "SemanticId": "0173-1#02-AAO677#002"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Manufacturer Name",
+      "Definition": "Description: legally valid designation of the natural or judicial person which is directly responsible for the design, production, packaging and labeling of a product in respect to its being brought into circulation; ",
+      "SemanticId": "0173-1#02-AAO677#002"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "Semantic equivalent, same semantic Id",
+      "MatchingAlgorithm": "None",
+      "MatchingDistance": 0,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Manufacturer product designation",
+      "Definition": "Description: Short description of the product (short text); ",
+      "SemanticId": "0173-1#02-AAW338#001"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Manufacturer Product Designation",
+      "Definition": "Description: Short description of the product (short text) ; ",
+      "SemanticId": "0173-1#02-AAW338#001"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "Semantic equivalent, same semantic Id",
+      "MatchingAlgorithm": "None",
+      "MatchingDistance": 0,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Physical Address",
+      "Definition": "Description: Collection for real physical address; ",
+      "SemanticId": "https://www.hsu-hh.de/aut/aas/physicaladdress"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Email Address",
+      "Definition": "Description: electronic mail address of a business partner; ",
+      "SemanticId": "0173-1#02-AAO198#002"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "NLP with metadata",
+      "MatchingAlgorithm": "Semantic search, k-nearest-neighbor with cosine distance, with model gart-labor/eng-distilBERT-se-eclass",
+      "MatchingDistance": 0.5896079540252686,
+      "Accepted": false
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Country code",
+      "Definition": "Description: agreed upon symbol for unambiguous identification of a country; ",
+      "SemanticId": "0173-1#02-AAO730#001"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: National Code",
+      "Definition": "Description: code of a country; ",
+      "SemanticId": "0173-1#02-AAO134#002"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "NLP with metadata",
+      "MatchingAlgorithm": "Semantic search, k-nearest-neighbor with cosine distance, with model gart-labor/eng-distilBERT-se-eclass",
+      "MatchingDistance": 0.372486412525177,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Street",
+      "Definition": "Description: Street name and house number; ",
+      "SemanticId": "0173-1#02-AAO128#001"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Street",
+      "Definition": "Description: street name and house number; ",
+      "SemanticId": "0173-1#02-AAO128#002"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "NLP with metadata",
+      "MatchingAlgorithm": "Semantic search, k-nearest-neighbor with cosine distance, with model gart-labor/eng-distilBERT-se-eclass",
+      "MatchingDistance": 5.960464477539063e-08,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Zip",
+      "Definition": "Description: ZIP code of address; ",
+      "SemanticId": "0173-1#02-AAO129#002"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Zipcode",
+      "Definition": "Description: ZIP code of address; ",
+      "SemanticId": "0173-1#02-AAO129#002"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "Semantic equivalent, same semantic Id",
+      "MatchingAlgorithm": "None",
+      "MatchingDistance": 0,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: City/town",
+      "Definition": "Description: Town or city of the company; ",
+      "SemanticId": "0173-1#02-AAO132#001"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: City Town",
+      "Definition": "Description: town or city; ",
+      "SemanticId": "0173-1#02-AAO132#002"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "NLP with metadata",
+      "MatchingAlgorithm": "Semantic search, k-nearest-neighbor with cosine distance, with model gart-labor/eng-distilBERT-se-eclass",
+      "MatchingDistance": 0.06017786264419556,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: state/county",
+      "Definition": "Description: state/county; ",
+      "SemanticId": "0173-1#02-AAO133#002"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: State County",
+      "Definition": "Description: federal state a part of a state; ",
+      "SemanticId": "0173-1#02-AAO133#002"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "Semantic equivalent, same semantic Id",
+      "MatchingAlgorithm": "None",
+      "MatchingDistance": 0,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Manufacturer product family",
+      "Definition": "Description: 2nd level of a 3 level manufacturer specific product hierarchy; ",
+      "SemanticId": "0173-1#02-AAU731#001"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Manufacturer Product Family",
+      "Definition": "Description: 2nd level of a 3 level manufacturer specific product hierarchy; ",
+      "SemanticId": "0173-1#02-AAU731#001"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "Semantic equivalent, same semantic Id",
+      "MatchingAlgorithm": "None",
+      "MatchingDistance": 0,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Serial number",
+      "Definition": "Description: unique combination of numbers and letters used to identify the device once it has been manufactured; ",
+      "SemanticId": "0173-1#02-AAM556#002"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Serial Number",
+      "Definition": "Description: unique combination of numbers and letters used to identify the device once it has been manufactured; ",
+      "SemanticId": "0173-1#02-AAM556#002"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "Semantic equivalent, same semantic Id",
+      "MatchingAlgorithm": "None",
+      "MatchingDistance": 0,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Batch number",
+      "Definition": "Description: Number assigned by the manufacturer of a material to identify the manufacturer's batch; ",
+      "SemanticId": "0173-1#02-AAQ196#001"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Product Article Number Of Manufacturer",
+      "Definition": "Description: unique product identifier of the manufacturer; ",
+      "SemanticId": "0173-1#02-AAO676#003"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "NLP with metadata",
+      "MatchingAlgorithm": "Semantic search, k-nearest-neighbor with cosine distance, with model gart-labor/eng-distilBERT-se-eclass",
+      "MatchingDistance": 0.677619457244873,
+      "Accepted": false
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Product country of origin",
+      "Definition": "Description: Country in which the product is manufactured (manufacturer country); ",
+      "SemanticId": "0173-1#02-AAO841#001"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Country Of Origin",
+      "Definition": "Description: Country where the product was manufactured; ",
+      "SemanticId": "0173-1#02-AAO259#004"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "NLP with metadata",
+      "MatchingAlgorithm": "Semantic search, k-nearest-neighbor with cosine distance, with model gart-labor/eng-distilBERT-se-eclass",
+      "MatchingDistance": 0.1230616569519043,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Year of construction",
+      "Definition": "Description: Year as completion date of object; ",
+      "SemanticId": "0173-1#02-AAP906#001"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Year Of Construction",
+      "Definition": "Description: Year as completion date of object; ",
+      "SemanticId": "0173-1#02-AAP906#001"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "Semantic equivalent, same semantic Id",
+      "MatchingAlgorithm": "None",
+      "MatchingDistance": 0,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Product Marking",
+      "Definition": "Description: Collection file for product marking; ",
+      "SemanticId": "https://www.hsu-hh.de/aut/aas/productmarking"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Markings",
+      "Definition": "Description: Collection of product markings; ",
+      "SemanticId": "0173-1#01-AGZ673#001"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "NLP with metadata",
+      "MatchingAlgorithm": "Semantic search, k-nearest-neighbor with cosine distance, with model gart-labor/eng-distilBERT-se-eclass",
+      "MatchingDistance": 0.423325777053833,
+      "Accepted": true
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: CE- qualification present",
+      "Definition": "Description: whether CE- qualification is present; ",
+      "SemanticId": "0173-1#02-BAF053#008"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Expiry Date",
+      "Definition": "Description: Date, at which the specified certificate expires ; ",
+      "SemanticId": "https://admin-shell.io/zvei/nameplate/2/0/Nameplate/Markings/Marking/ExpiryDate"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "NLP with metadata",
+      "MatchingAlgorithm": "Semantic search, k-nearest-neighbor with cosine distance, with model gart-labor/eng-distilBERT-se-eclass",
+      "MatchingDistance": 0.5489804744720459,
+      "Accepted": false
+    }
+  },
+  {
+    "RequestedSubmodelElement": {
+      "Name": "Name: Embedded Doc. file",
+      "Definition": "Description: Reference/ BLOB to embedded documentation file.; ",
+      "SemanticId": "0173-1#02-AAD005#008"
+    },
+    "IDTASubmodelElement": {
+      "Name": "Name: Instructions Control Drawing",
+      "Definition": "Description: designation used to uniquely identify a control/reference drawing stored in a file system; ",
+      "SemanticId": "0112/2///61987#ABO102#001"
+    },
+    "MattchingInformation": {
+      "MatchingMethod": "NLP with metadata",
+      "MatchingAlgorithm": "Semantic search, k-nearest-neighbor with cosine distance, with model gart-labor/eng-distilBERT-se-eclass",
+      "MatchingDistance": 0.6225080490112305,
+      "Accepted": false
+    }
+  }
+]
